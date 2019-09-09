@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.itstyle.bpmn.common.util.DateUtils;
 import com.itstyle.bpmn.repository.BpmnRepository;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -30,15 +31,29 @@ public class BpmnServiceImpl implements IBpmnService {
 	
 	@Override
 	public Result list(Map<String, Object> params, SysUser user) {
+		String content = (String)params.get("content");
+		boolean contentINB = false;
+		if(StringUtils.isNotBlank(content)){
+			content = content.trim()+"%";
+			contentINB = true;
+		}
 		StringBuffer nativeCount = new StringBuffer("SELECT count(*) FROM bpmn_model WHERE user_create=?");
-		Long count =  dynamicQuery.nativeQueryCount(nativeCount.toString(),new Object[] {user.getId()});
+		if(contentINB){
+			nativeCount.append(" and model_name like ?");
+		}
+		Object[] obj = contentINB?new Object[] {user.getId(),content}:new Object[] {user.getId()};
+		Long count =  dynamicQuery.nativeQueryCount(nativeCount.toString(),obj);
 		List<BpmnModel> bpmnList = new ArrayList<>();
 		if(count>0) {
 			Integer pageNo = Integer.parseInt(params.get("pageNo").toString());
 			Integer pageSize = Integer.parseInt(params.get("pageSize").toString());
-			StringBuffer nativeSql = new StringBuffer("SELECT * FROM bpmn_model WHERE user_create=? order by gmt_create");
+			StringBuffer nativeSql = new StringBuffer("SELECT * FROM bpmn_model WHERE user_create=?");
+			if(contentINB){
+				nativeSql.append(" and model_name like ?");
+			}
+			nativeSql.append(" order by gmt_create");
 			Pageable pageable = new PageRequest(pageNo-1,pageSize);
-			bpmnList =dynamicQuery.nativeQueryPagingList(BpmnModel.class, pageable, nativeSql.toString(), new Object[] {user.getId()} );
+			bpmnList =dynamicQuery.nativeQueryPagingList(BpmnModel.class, pageable, nativeSql.toString(), obj);
 		}
 		PageBean<BpmnModel> result = new PageBean<>(bpmnList, count);
 		return  CommonUtils.msg(result);
