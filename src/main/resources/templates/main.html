@@ -217,6 +217,14 @@
 			}
 		});						
 	});
+    //iframe自适应
+    /*$(window).on('resize', function() {
+        var $content = $('.content');
+        $content.height($(this).height() - 80);
+        $content.find('iframe').each(function() {
+            $(this).height($content.height());
+        });
+    }).resize();*/
 </script>
 <script th:src="@{/layer/layer.js}" type="text/javascript"></script>
 <!-- Bootstrap 3.3.7 -->
